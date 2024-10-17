@@ -14,9 +14,9 @@ source $PWD/env.sh # Add this line to your startup script
 ```
 
 ## Getting Started
-Run the script with
+Run the script with:
 ```bash
-python3 $APPLY_PYG/main.py
+python3 $APPLY_PYG_HOME/main.py
 ```
 
 #
