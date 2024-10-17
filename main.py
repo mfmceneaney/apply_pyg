@@ -109,7 +109,7 @@ if __name__=="__main__":
     parser.add_argument('--modelpath', type=str, default='model.pt',help='Path to PyTorch model')
     parser.add_argument('--hipofile',type=str, default='test.hipo',help='Path to input HIPO file')
     parser.add_argument('--bank', type=str, default='ML::pred',help='HIPO bank name to which to write ML results')
-    parser.add_argument('--dtype',type=str, default=["D","I"], narags=2, help='HIPO bank data types ("D" -> double, "F" -> float etc.)')
+    parser.add_argument('--dtype',type=str, default=["D","I"], nargs=2, help='HIPO bank data types ("D" -> double, "F" -> float etc.)')
     parser.add_argument('--names',type=str, default=["pred","label"], nargs=2, help='HIPO bank row names')
     args = parser.parse_args()
 
