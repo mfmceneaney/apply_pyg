@@ -9,7 +9,8 @@ import hipopy.hipopy as hp
 
 # Miscellaneous
 import os
-import sys #NOTE: ADDED
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from tqdm import tqdm
 import argparse
 
