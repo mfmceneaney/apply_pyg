@@ -58,25 +58,25 @@ from torch_geometric.nn.norm import GraphNorm
 from torch.nn import BatchNorm1d
 
 class GIN(torch.nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels=7, hidden_dim=64, num_layers=4, dropout=0.5, out_channels=2):
         super().__init__()
 
         self.convs = torch.nn.ModuleList()
         self.bns   = torch.nn.ModuleList()
-        hidden_dim = 64 #hidden_dim
-        num_layers = 4 # num_layers
-        dropout = 0.5 # drop out rate for final layers
+        self.in_channels = in_channels
+        self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.dropout = dropout
+        self.out_channels = out_channels
         
         for _ in range(self.num_layers - 1):
-            mlp = MLP([in_channels if _==0 else hidden_dim, hidden_dim, hidden_dim, hidden_dim],norm='batch_norm',act='relu') #NOTE ADDED EXTRA LAYER HERE
+            mlp = MLP([in_channels if _==0 else self.hidden_dim, self.hidden_dim, self.hidden_dim, self.hidden_dim],norm='batch_norm',act='relu') #NOTE ADDED EXTRA LAYER HERE
             self.convs.append(GINConv(mlp, train_eps=False))
-            self.bns.append(BatchNorm1d(hidden_dim))
+            self.bns.append(BatchNorm1d(self.hidden_dim))
 
         self.mlps = torch.nn.ModuleList()
         for _ in range(self.num_layers): #NOTE: INPUT DIM FOR MLP LAYER HAS TO MATCH INPUT DIM FOR EACH GRAPH REPRESENTATION IN EACH LAYER HERE
-            self.mlps.append(MLP([in_channels if _==0 else hidden_dim, hidden_dim, hidden_dim, out_channels], norm=None, dropout=self.dropout, act='relu')) #NOTE ADDED EXTRA LAYER HERE AND..-> CHANGED ACTIVATION FUNCTION FROM DEFAULT RELU
+            self.mlps.append(MLP([self.in_channels if _==0 else self.hidden_dim, self.hidden_dim, self.hidden_dim, self.out_channels], norm=None, dropout=self.dropout, act='relu')) #NOTE ADDED EXTRA LAYER HERE AND..-> CHANGED ACTIVATION FUNCTION FROM DEFAULT RELU
 
     def forward(self, x, edge_index, batch): #data):
         #x, edge_index, batch = data.x, data.edge_index, data.batch
