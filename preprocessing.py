@@ -422,7 +422,7 @@ def preprocess_rec_traj(x):
     """
     #NOTE: Assume indices go 0-10 : pindex, index, detector, layer, x, y, z, cx, cy, cz, path
     
-    pindex_idx, index_idx, detector_idx, layer_idx, x_idx, y_idx, z_idx, cx_idx, cy_idx, cz_idx, path_idx = [i for i in range(np.shape(x)[-1])]
+    pindex_idx, index_idx, detector_idx, layer_idx, x_idx, y_idx, z_idx, cx_idx, cy_idx, cz_idx, path_idx, edge_index = [i for i in range(12)] #NOTE: OLD np.shape(x)[-1]
     
     # Preprocess row info
 #     x[:,x_idx]    -= 0.0
@@ -471,3 +471,97 @@ def get_edge_index_rec_traj(x):
     edge_index = torch.tensor([[i,j] for el_ in link_indices for i in el_ for j in el_],dtype=torch.long)
         
     return edge_index
+
+def get_secondary_vtx_matrix(
+        rec_traj_event_table,
+        mc_lund_event_table=None,
+        match_indices=None,
+        pindex_idx=0,
+        mcparent_idx=4
+    ):
+    """
+    :description: Determine MC truth correlation matrix for tracks in REC::Particle coming from the same decay vertex.
+    
+    :param: rec_traj_event_table
+    :param: mc_lund_event_table=None
+    :param: match_indices=None
+    :param: pindex_idx=0
+    :param: mcparent_idx=4
+    
+    :return: y
+    """
+
+    # Create empty square correlation matrix between all unique sets of trajectories in REC::Traj
+    rec_indices = np.unique(rec_traj_event_table[:,pindex_idx]).astype(int) #[i for i in range(len(rec_particle_event_table))] #NOTE: IMPORTANT TO CAST TO INT SINCE USING AS INDICES BUT READ AS FLOAT
+    # print("DEBUGGING: rec_indices = ",rec_indices)
+    nparticles = 30 #np.max(rec_indices)+1 if len(rec_indices)>0 else 0 #NOTE: USE MAX+1 SINCE INDEX HERE AND BECAUSE NOT ALL TRACKS MAY SHOW UP, e.g., may just get tracks [0,1,3,4,5] from REC::Particle out of actual tracks [0-8]
+    y = np.zeros((nparticles,nparticles),dtype=int)
+
+    # Loop rec indices to find if MC truth particles come from same MC parent AND are unique particles and NOT correlations between the same particle
+    for rec1_idx in rec_indices:
+        mc1_idx = match_indices[rec1_idx,1]
+        mc1_pidx = mc_lund_event_table[mc1_idx,mcparent_idx]
+        for rec2_idx in rec_indices:
+            mc2_idx = match_indices[rec2_idx,1]
+            mc2_pidx = mc_lund_event_table[mc2_idx,mcparent_idx]
+
+            if mc2_pidx==mc1_pidx and mc1_idx!=mc2_idx and rec1_idx!=rec2_idx:
+                try:
+                    y[rec1_idx,rec2_idx] = 1
+                except Exception:
+                    print("DEBUGGING: rec1_idx = ",rec1_idx)
+                    print("DEBUGGING: rec2_idx = ",rec2_idx)
+                    print("DEBUGGING: rec_indices = ",rec_indices)
+                    print("DEBUGGING: y = ",y)
+                    print("DEBUGGING: match_indices = ",match_indices)
+                    raise Exception
+    
+    return y
+
+def get_trajectories_rec_traj(x,max_trajectory_entries=30):
+    """
+    :description: Run preprocessing for S2G data on input array assuming it is full matrix of REC::Traj bank.
+    
+    :param: x
+    :param: max_trajectory_entries = 30
+    
+    :return: traj_list
+    """
+    #NOTE: Assume indices go 0-10 : pindex, index, detector, layer, x, y, z, cx, cy, cz, path, edge(!ONLY IN COATJAVA==11.0.1!)
+    pindex_idx, index_idx, detector_idx, layer_idx, x_idx, y_idx, z_idx, cx_idx, cy_idx, cz_idx, path_idx, edge_idx = [i for i in range(12)] #NOTE: OLD np.shape(x)[-1]
+    
+    # Apply preprocessing and update indices
+    new_x = preprocess_rec_traj(x)
+    x_idx, y_idx, z_idx, cx_idx, cy_idx, cz_idx, path_idx = [i for i in range(np.shape(new_x)[-1])]
+
+    # Set dimensions of each track vector and the maximum
+    x_dim    = np.shape(new_x)[-1]
+    traj_dim = x_dim * max_trajectory_entries
+
+    # Get unique REC::Particle indices in REC::Traj pindex row
+    # print("DEBUGGING: get_trajectories_rec_traj(): x[:,",pindex_idx,"]          = ",x[:,pindex_idx])
+    recparticle_indices = np.unique(x[:,pindex_idx])
+    # print("DEBUGGING: get_trajectories_rec_traj(): recparticle_indices = ",recparticle_indices)
+
+    # Loop unique REC::Particle indices in REC::Traj pindex row
+    traj_list       = []
+    rectraj_idx     = 0
+    for recparticle_idx in recparticle_indices:
+        traj = np.zeros((traj_dim,),dtype=float)
+
+        # Loop REC::Traj indices until pindex does not match rec_idx, breaking if too many entries are appended
+        while x[rectraj_idx,pindex_idx]==recparticle_idx:
+
+            # Get data and add entry to trajectory
+            min_idx = (rectraj_idx)*x_dim
+            max_idx = (rectraj_idx+1)*x_dim
+            if max_idx >= len(traj): break
+            traj[min_idx:max_idx] = new_x[rectraj_idx]
+
+            # Increment index and break if needed
+            rectraj_idx += 1
+            if rectraj_idx>=len(x): break
+            
+        traj_list.append(traj)
+
+    return np.array(traj_list)
