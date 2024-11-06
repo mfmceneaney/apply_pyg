@@ -30,6 +30,7 @@ def main(
         names     = ["pred","label"],
         group     = 300,
         item      = 0,
+        use_data  = False,
     ):
     
     # Make sure you have absolute paths
@@ -69,7 +70,8 @@ def main(
         if len(rec_particle_event_table)>0:
 
             # Set entries to use as data/truth
-            rec_particle_entry_indices   = [0,1,2,3,9,10,11] # pid, px, py, pz, (vx, vy, vz, vt (Only in MC?), charge), beta, chi2pid, status #TODO: SET THESE OUTSIDE LOOPS
+            rec_particle_entry_indices   = [0,1,2,3,9,10,11] if not use_data else [0,1,2,3,8,9,10] # pid, px, py, pz, (vx, vy, vz, vt (Only in MC?), charge), beta, chi2pid, status #TODO: SET THESE OUTSIDE LOOPS
+            
             rec_particle_event_x = get_sub_array(rec_particle_event_table,rec_particle_entry_indices)
 
             # Preprocess data from REC::Particle instead #NOTE: This also automatically selects subarray
@@ -112,6 +114,7 @@ if __name__=="__main__":
     parser.add_argument('--bank', type=str, default='ML::pred',help='HIPO bank name to which to write ML results')
     parser.add_argument('--dtype',type=str, default=["D","I"], nargs=2, help='HIPO bank data types ("D" -> double, "F" -> float etc.)')
     parser.add_argument('--names',type=str, default=["pred","label"], nargs=2, help='HIPO bank row names')
+    parser.add_argument('--use_data', action='store_true', help='Use data file configuration, i.e., assume no vt entry in REC::Particle')
     args = parser.parse_args()
 
     # Run main
@@ -121,4 +124,5 @@ if __name__=="__main__":
         bank      = args.bank,
         dtype     = args.dtype,
         names     = args.names,
+        use_data  = args.use_data,
     )
