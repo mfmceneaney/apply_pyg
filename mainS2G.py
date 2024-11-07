@@ -94,7 +94,7 @@ def main(
                     edge_index = torch.tensor([[i,j] for i in range(num_nodes) for j in range(num_nodes)],dtype=torch.long)
                     
                     # Create PyG graph
-                    data    = tg.data.Data(x=x_pair, edge_index=edge_index.t().contiguous())
+                    data    = Data(x=x_pair, edge_index=edge_index.t().contiguous())
                     data.y  = torch.tensor([1] if y[x_idx,x_idx2]>0 else [0],dtype=torch.long) #NOTE: Add extra dimension here so that training gets target batch dimension right.
 
                     # Apply model
