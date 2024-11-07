@@ -63,7 +63,7 @@ def main(
         rec_traj_keys       = get_bank_keys(rec_traj_name,all_keys)
         
         # Get REC::Traj bank
-        rec_traj_event_table = get_event_table(rec_traj_keys,event_num,batch,dtype=float) if rec_traj_name+'_pindex' in event.keys() else []
+        rec_traj_event_table = get_event_table(rec_traj_keys,0,event,dtype=float) if rec_traj_name+'_pindex' in event.keys() else []
 
         # Make sure REC::Traj bank is non-empty
         bankdata = [] #BY DEFAULT JUST ADD EMPTY ENTRY FOR CLAS12-ANALYSIS
