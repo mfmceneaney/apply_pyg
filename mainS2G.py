@@ -108,8 +108,9 @@ def main(
                         bankentry = [out,pred,x_idx,x_idx2]
                         bankdata.append(bankentry)
             
-            # Convert bankdata to numpy
+            # Convert bankdata to numpy and create correct shape
             bankdata = np.array(bankdata)
+            bankdata = np.swapaxes(bankdata,0,1)
 
         # Add data to file if exists
         file.update({bank : bankdata} if len(bankdata)>0 else {})
